@@ -17,7 +17,7 @@ const registerUser = asyncHandler(async (req, res) => {
     // return res
 
 
-    const { fullName, email, username, password } = req.body
+    const { fullName, email, username, password } = await req.body
     
 
     if (fullName === "") {
@@ -40,12 +40,12 @@ const registerUser = asyncHandler(async (req, res) => {
     if(existedUser){
         throw new ApiError(409,"This user is already exists !!")
     }
-
-    const avatarLocalPath = req.files?.avatar[0]?.path
+    
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
     let coverImageLocalPath;
 
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-        coverImageLocalPath = req.files.coverImage[0].path;
+        coverImageLocalPath = await req.files.coverImage[0].path;
     }
 
     if (!avatarLocalPath) {
@@ -82,10 +82,10 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const generateRefreshAndAccessToken = async (userId) => {
     try {
-        const user = User.findById(userId)
+        const user = await User.findById(userId)
 
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
+        const accessToken = await user.generateAccessToken()
+        const refreshToken = await user.generateRefreshToken()
 
         user.refreshToken = refreshToken;
         
@@ -99,9 +99,10 @@ const generateRefreshAndAccessToken = async (userId) => {
 
 const loginUser = asyncHandler(async (req, res) => {
     //get data from body 
-    const {email, username, password} = req.body;
+    const {email, username, password} = await req.body;
+    
 
-    if(!username || !email){
+    if(!username && !email){
         throw new ApiError(400,"email or username are required");
     }
 
@@ -117,14 +118,14 @@ const loginUser = asyncHandler(async (req, res) => {
     //compare the password using bcrypt
     const isPasswordValid = await user.isPasswordCorrect(password)
 
-    if (isPasswordValid) {
+    if (!isPasswordValid) {
         throw new ApiError(401,"user cradantials are not valid");
     }
 
     //if correct give access token and refresh token
     const {accessToken, refreshToken} = await generateRefreshAndAccessToken(user._id);
 
-    const loggedInUser = User.findById(user._id).select("-password -refreshToken");
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken").lean();
 
     //send cookie
     const options = {
@@ -150,13 +151,13 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {refreshToken: undefined},
+            $unset: {refreshToken: 1},
         },
         {
             new: true
         }
     )
-
+    
     const options = {
         httpOnly: true,
         secure: true
@@ -164,8 +165,8 @@ const logoutUser = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .clearCookie("accessToken")
-    .clearCookie("refreshToken")
+    .clearCookie("accessToken",options)
+    .clearCookie("refreshToken",options)
     .json( new ApiResponse(200, {}, "User logged out successfully"))
     
 })
