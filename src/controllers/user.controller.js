@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
 
+
 const registerUser = asyncHandler(async (req, res) => {
     // get user details from frontend
     // validtion - not empty
@@ -84,10 +85,26 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const generateRefreshAndAccessToken = async (userId) => {
     try {
+        if (!userId) {
+            throw new ApiError(501, "user id did not passed")
+        }
+
         const user = await User.findById(userId)
+
+        if (!user) {
+            throw new ApiError(401, "user not found may be userId is incorrect or not found")
+        }
 
         const accessToken = await user.generateAccessToken()
         const refreshToken = await user.generateRefreshToken()
+
+        if (!accessToken) {
+            throw new ApiError(500, "did not get access token")
+        }
+        if (!refreshAccessToken) {
+            throw new ApiError(500, "did not get refresh token")
+        }
+        
 
         user.refreshToken = refreshToken;
         
@@ -198,14 +215,14 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         secure: true
     }
 
-    const {accessToken, newRefreshToken} = await generateRefreshAndAccessToken();
+    const {accessToken, refreshToken} = await generateRefreshAndAccessToken(decodedToken?._id);
 
     return res
     .status(200)
     .cookie("accessToken", accessToken, options)
-    .cookie("refeshToken", newRefreshToken, options)
+    .cookie("refreshToken", refreshToken, options)
     .json(
-        new ApiResponse(200,{accessToken, refreshToken: newRefreshToken}, "Tokens are refreshed")
+        new ApiResponse(200,{accessToken, refreshToken}, "Tokens are refreshed")
     )
 })
 
@@ -213,13 +230,21 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const changeCurrentPassword = asyncHandler( async (req, res) => {
     const {oldPassword, newPassword} = req.body;
 
-    const user = User.findById(req.user?._id);
+    if (!oldPassword) {
+        throw new ApiError(401, "old password is missing")
+    }
+
+    if (!newPassword) {
+        throw new ApiError(401, "new password is missing")
+    }
+
+    const user = await User.findById(req.user?._id);
 
     if (!user) {
         throw new ApiError(401, "invalid user id");
     }
 
-    const isPasswordCorrect = user.isPasswordCorrect(oldPassword);
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
 
     if (!isPasswordCorrect) {
         throw new ApiError(400, "wrong old password");
@@ -237,7 +262,7 @@ const changeCurrentPassword = asyncHandler( async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
     return res
     .status(200)
-    .json(200, req.user, "current user fetched successfully")
+    .json(new ApiResponse(200, req.user, "current user fetched successfully"))
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -289,7 +314,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .json(200, user, "avatar updated successfully")
+    .json(new ApiResponse(200, user, "avatar updated successfully"))
 })
 
 
@@ -318,7 +343,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .json(200, user, "coverImage updated successfully")
+    .json(new ApiResponse(200, user, "coverImage updated successfully"))
 })
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
@@ -351,18 +376,31 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
             }
         },
         {
-            subscriberCount:{
-                $size:"$subscribers"
-            },
-            subscribedToCount:{
-                $size: "$subscribedTo"
-            },
-            isSubscribed:{
-                $cond:{
-                    if: {$in: [req.user?._id, "subscribers.subscriber"]},
-                    then: true,
-                    else: false
-                }
+            $addFields:{
+                subscriberCount:{
+                    $size:"$subscribers"
+                },
+                subscribedToCount:{
+                    $size: "$subscribedTo"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: {
+                            $in: [
+                                req.user?._id,
+                                {
+                                    $map: {
+                                        input: "$subscribers",
+                                        as: "sub",
+                                        in: "$$sub.subscriber"
+                                    }
+                                }
+                            ]
+                        },
+                        then: true,
+                        else: false
+                    }
+}
             }
         },
         {
@@ -379,7 +417,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         }
     ])
 
-    if (!channel.length()) {
+    if (!channel.length) {
         throw new ApiError(404, "channel does not exist")
     }
 
