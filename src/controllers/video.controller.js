@@ -96,7 +96,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Video id is required")
     }
 
-    const video = await Video.findOne(videoId);
+    const video = await Video.findById(videoId).populate("owner", "username avatar").exec();
 
     if(!video){
         throw new ApiError(400, "Invalid videoId or video does not exist")
@@ -153,7 +153,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
         throw new ApiError(404, "videoId is required");
     }
 
-    const video = await findById(videoId);
+    const video = await Video.findById(videoId);
 
     if (!video) {
         throw new ApiError(404, "Video not found or already deleted");
@@ -162,14 +162,15 @@ const deleteVideo = asyncHandler(async (req, res) => {
     const incomingRefreshToken = await req.cookies.refreshToken || req.body.refreshToken;
     const decodedToken = jwt.verify(incomingRefreshToken,process.env.ACCESS_TOKEN_SECRET);
 
-    if(!(decodedToken._id !== video._id)){
+    if(!(decodedToken._id !== videoId)){
         throw new ApiError(401, "You don't have access to delete this video")
     }
 
     const deletedVideo = await Video.findByIdAndDelete(videoId);
-    const deletedOnCloudnary = await cloudinary.uploader.destroy(video.publicId)
+    const deletedOnCloudnary = await cloudinary.uploader.destroy(video.publicId,{resource_type: "video"})
 
-    console.log("respone of deleted video ===> ",deleteVideo); // Todo check the response
+    console.log("respone of deletededOnclo.. video ===> ",deletedOnCloudnary); // Todo check the response
+    console.log("respone of deletedVideo video ===> ",deletedVideo); // Todo check the response
     
     if (!deletedVideo ) {
         throw new ApiError(404, "Video not found or already deleted");
