@@ -11,7 +11,7 @@ import jwt from 'jsonwebtoken'
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
-    
+    let data;
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
     
     if(!incomingRefreshToken){
@@ -38,16 +38,18 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
             video: videoId,
             likedBy:decodedToken._id
         })
+        data = "liked"
     }
 
     // if liked then remove it from like
     if(liked){
         await Like.deleteOne({video:{_id: videoId}})
+        data = "disliked"
     }
     
     return res
     .status(200)
-    .json(new response(200, {}, "Like Toggled successfully from video"))
+    .json(new ApiResponse(200, data, "Like Toggled successfully from video"))
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
