@@ -53,49 +53,45 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
-    const {commentId} = req.params
-
+    const { commentId } = req.params;
+    let data;
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
-    
-    if(!incomingRefreshToken){
-        throw new ApiError(401,"Unothorized request");
+
+    if (!incomingRefreshToken) {
+        throw new ApiError(401, "Unauthorized request");
     }
 
-    // check the comment exist or not
-    const comment = await Comment.findOne({_id:commentId})
+    // check the comment exists or not
+    const comment = await Comment.findOne({ _id: commentId });
 
-    if(!comment){
-        throw new ApiError(401,"comment does not exist")
+    if (!comment) {
+        throw new ApiError(404, "Comment does not exist");
     }
-    
-    // check the comment is already liked or not 
-    
-    const liked = await Like.findOne({comment:{_id: commentId}});
-    
-    // if not liked add a like
+
+    // check if the comment is already liked or not
+    const liked = await Like.findOne({ comment: { _id: commentId } });
+
     if (!liked) {
-        
-        const decodedToken = jwt.verify(incomingRefreshToken,process.env.ACCESS_TOKEN_SECRET);
+        const userId = req.user?._id;
 
         await Like.create({
             comment: commentId,
-            likedBy:decodedToken._id
-        })
+            likedBy: userId
+        });
+        data = "liked";
+    } else {
+        await Like.deleteOne({ comment: { _id: commentId } });
+        data = "disliked";
     }
 
-    // if liked then remove it from like
-    if(liked){
-        await Like.deleteOne({comment:{_id: commentId}})
-    }
-    
     return res
-    .status(200)
-    .json(new response(200, {}, "Like Toggled successfully from comment"))
-
-})
+        .status(200)
+        .json(new ApiResponse(200, data, `Comment ${data} successfully`));
+});
 
 const toggleTweetLike = asyncHandler(async (req, res) => {
     const {tweetId} = req.params
+    let data;
 
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
     
@@ -117,22 +113,24 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     // if not liked add a like
     if (!liked) {
         
-        const decodedToken = jwt.verify(incomingRefreshToken,process.env.ACCESS_TOKEN_SECRET);
+        const userId = req.user?._id;
 
         await Like.create({
             tweet: tweetId,
-            likedBy:decodedToken._id
+            likedBy:userId
         })
+        data = "liked"
     }
 
     // if liked then remove it from like
     if(liked){
         await Like.deleteOne({tweet:{_id: tweetId}})
+        data = "disliked"
     }
     
     return res
     .status(200)
-    .json(new response(200, {}, "Like Toggled successfully from tweet"))
+    .json(new ApiResponse(200, data, `Tweet ${data} successfully`))
 }
 )
 
