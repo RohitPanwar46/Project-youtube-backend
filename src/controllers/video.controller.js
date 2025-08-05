@@ -112,8 +112,20 @@ const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
 
-    if(!videoId){
-        throw new ApiError(404,"videoId is required")
+    if (!videoId) {
+        throw new ApiError(404, "videoId is required");
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.ACCESS_TOKEN_SECRET);
+
+    if (video.owner.toString() !== decodedToken._id) {
+        throw new ApiError(403, "You do not have permission to update this video");
     }
 
     const { title, description } = req.body;
@@ -189,14 +201,22 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+
     if (!videoId) {
         throw new ApiError(404, "videoId is required");
     }
 
     const video = await Video.findById(videoId);
-
+    
     if (!video) {
         throw new ApiError(404, "Video not found");
+    }
+
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.ACCESS_TOKEN_SECRET);
+
+    if (video.owner.toString() !== decodedToken._id) {
+        throw new ApiError(403, "You do not have permission to toggle publish status of this video");
     }
 
     video.isPublished = !video.isPublished;
