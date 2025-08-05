@@ -4,22 +4,19 @@ import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import { verifyJwt } from "../middlewares/auth.middleware.js"
+import jwt from 'jsonwebtoken'
 
 const createTweet = asyncHandler(async (req, res) => {
-    //TODO: create tweet
-    const {content} = req.body;
+    const { content } = req.body;
+    const userId = req.user?._id;
 
     if(!content){
         throw new ApiError(401, "Content is required");
     }
 
-    const refreshToken = await req.cookies.refreshToken || req.body.refreshToken;
-    const decodedToken = verifyJwt(refreshToken,process.env.REFRESH_TOKEN_SECRET);
-
     const tweet = await Tweet.create({
         content,
-        owner: decodedToken._id
+        owner: userId
     })
 
     return res
@@ -50,7 +47,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
 })
 
-const updateTweet = asyncHandler(async (req, res) => {
+const updateTweet = asyncHandler(async (req, res, next) => {
     //TODO: update tweet
     const { tweetId } = req.params;
     const { content } = req.body;
@@ -68,9 +65,8 @@ const updateTweet = asyncHandler(async (req, res) => {
     }
 
     // Optionally, check if the user is the owner of the tweet
-    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
-    const decodedToken = verifyJwt(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    if (tweet.owner.toString() !== decodedToken._id) {
+    const userId = req.user._id;
+    if (tweet.owner.toString() !== userId.toString()) {
         throw new ApiError(403, "You are not authorized to update this tweet");
     }
 
@@ -82,7 +78,7 @@ const updateTweet = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, tweet, "Tweet updated successfully!"));
 })
 
-const deleteTweet = asyncHandler(async (req, res) => {
+const deleteTweet = asyncHandler(async (req, res, next) => {
     //TODO: delete tweet
     const { tweetId } = req.params;
 
@@ -96,9 +92,8 @@ const deleteTweet = asyncHandler(async (req, res) => {
     }
 
     // checking the authorization of user to delete the tweet
-    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
-    const decodedToken = verifyJwt(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    if (tweet.owner.toString() !== decodedToken._id) {
+    const userId = req.user?._id;
+    if (tweet.owner.toString() !== userId.toString()) {
         throw new ApiError(403, "You are not authorized to delete this tweet");
     }
 
