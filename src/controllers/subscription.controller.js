@@ -55,7 +55,7 @@ const getChannelSubscribers = asyncHandler(async (req, res) => {
     }
 
     const subscribers = await Subscription.find({ channel: channelId })
-        .populate("subscriber", "username email avatar")
+        .populate("subscriber", "username avatar")
         .lean();
 
     return res
