@@ -5,7 +5,7 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 
 const createPlaylist = asyncHandler(async (req, res) => {
-    const {name, description} = req.body
+    const {name} = req.body
     const userId = req.user?._id
 
     if (!name) {
@@ -14,7 +14,6 @@ const createPlaylist = asyncHandler(async (req, res) => {
 
     const playlist = await Playlist.create({
         name,
-        description,
         owner: userId,
         videos: []
     })
@@ -129,7 +128,7 @@ const deletePlaylist = asyncHandler(async (req, res) => {
 
 const updatePlaylist = asyncHandler(async (req, res) => {
     const {playlistId} = req.params
-    const {name, description} = req.body
+    const {name} = req.body
     const userId = req.user?._id
 
     if (!isValidObjectId(playlistId)) {
@@ -146,7 +145,6 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     }
 
     if (name) playlist.name = name
-    if (description) playlist.description = description
 
     await playlist.save()
 
