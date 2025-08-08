@@ -165,7 +165,6 @@ const loginUser = asyncHandler(async (req, res) => {
     )
 })
 
-
 const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
@@ -189,7 +188,6 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json( new ApiResponse(200, {}, "User logged out successfully"))
     
 })
-
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
@@ -226,7 +224,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     )
 })
 
-
 const changeCurrentPassword = asyncHandler( async (req, res) => {
     const {oldPassword, newPassword} = req.body;
 
@@ -257,7 +254,6 @@ const changeCurrentPassword = asyncHandler( async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "password updated successfully"))
 })
-
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     return res
