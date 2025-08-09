@@ -9,50 +9,42 @@ import mongoose from "mongoose";
 
 
 const registerUser = asyncHandler(async (req, res) => {
-    // get user details from frontend
-    // validtion - not empty
-    // check if user already exists: username or email
-    // check for images check for avatar 
-    // upload them to cloudinary, avatar
-    // creat user object - creat entery in db
-    // remove password and refresh token field in response
-    // check for user creation 
-    // return res
-
-
     const { fullName, email, username, password } = await req.body
-    
 
-    if (fullName === "") {
-        throw new ApiError(400,"Full name is required")
+    if (!fullName || fullName === "") {
+        throw new ApiError(400, "Full name is required")
     }
-    if (username === "" || username === null) {
-        throw new ApiError(400,"username is required")
+    if (!username || username === "") {
+        throw new ApiError(400, "username is required")
     }
-    if (password === "") {
-        throw new ApiError(400,"password is required")
+    if (!password || password === "") {
+        throw new ApiError(400, "password is required")
     }
-    if (email === "" || email === null) {
-        throw new ApiError(400,"email is required")
+    if (!email || email === "") {
+        throw new ApiError(400, "email is required")
     }
 
-
-    const existedUser = await User.findOne({$or:[ { username }, { email } ]})
-    
-
-    if(existedUser){
-        throw new ApiError(409,"This user is already exists !!")
+    // Check if username already exists
+    const existingUsername = await User.findOne({ username: username.toLowerCase() });
+    if (existingUsername) {
+        throw new ApiError(409, "Username is already taken");
     }
-    
+
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+        throw new ApiError(409, "Email is already registered");
+    }
+
     const avatarLocalPath = req.files?.avatar?.[0]?.path;
     let coverImageLocalPath;
 
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-        coverImageLocalPath = await req.files.coverImage[0].path;
+        coverImageLocalPath = req.files.coverImage[0].path;
     }
 
     if (!avatarLocalPath) {
-        throw new ApiError(400,"avatar file is required")
+        throw new ApiError(400, "avatar file is required")
     }
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
@@ -75,12 +67,11 @@ const registerUser = asyncHandler(async (req, res) => {
         "-password -refreshToken"
     )
 
-    if(!createdUser){
+    if (!createdUser) {
         throw new ApiError("500", "Something went wrong while registering the user")
     }
 
     return res.status(201).json(new ApiResponse(200, createdUser, "User registered successfully!"))
-
 })
 
 const generateRefreshAndAccessToken = async (userId) => {
