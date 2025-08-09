@@ -8,8 +8,10 @@ import mongoose from "mongoose";
 
 
 
-const registerUser = asyncHandler(async (req, res) => {
-    const { fullName, email, username, password } = await req.body
+const registerUser = asyncHandler(async (req, res, next) => {
+    console.log("Register route hit");
+
+    const { fullName, email, username, password } = req.body
 
     if (!fullName || fullName === "") {
         throw new ApiError(400, "Full name is required")
@@ -23,7 +25,6 @@ const registerUser = asyncHandler(async (req, res) => {
     if (!email || email === "") {
         throw new ApiError(400, "email is required")
     }
-
     // Check if username already exists
     const existingUsername = await User.findOne({ username: username.toLowerCase() });
     if (existingUsername) {
