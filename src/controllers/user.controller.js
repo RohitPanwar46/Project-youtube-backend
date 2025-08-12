@@ -5,6 +5,7 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import ms from "ms";
 
 
 
@@ -143,13 +144,13 @@ const loginUser = asyncHandler(async (req, res) => {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        maxAge: process.env.REFRESH_TOKEN_EXPIRY
+        maxAge: ms(process.env.REFRESH_TOKEN_EXPIRY)
     }
     const aOptions = {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        maxAge: process.env.ACCESS_TOKEN_EXPIRY
+        maxAge: ms(process.env.ACCESS_TOKEN_EXPIRY)
     }
 
     return res
@@ -213,13 +214,13 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        maxAge: process.env.REFRESH_TOKEN_EXPIRY
+        maxAge: ms(process.env.REFRESH_TOKEN_EXPIRY)
     }
     const aOptions = {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        maxAge: process.env.ACCESS_TOKEN_EXPIRY
+        maxAge: ms(process.env.ACCESS_TOKEN_EXPIRY)
     }
 
     const {accessToken, refreshToken} = await generateRefreshAndAccessToken(decodedToken?._id);
