@@ -139,16 +139,23 @@ const loginUser = asyncHandler(async (req, res) => {
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken").lean();
 
     //send cookie
-    const options = {
+    const rOptions = {
         httpOnly: true,
         secure: true,
-        sameSite: "none"
+        sameSite: "none",
+        maxAge: process.env.REFRESH_TOKEN_EXPIRY
+    }
+    const aOptions = {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: process.env.ACCESS_TOKEN_EXPIRY
     }
 
     return res
     .status(200)
-    .cookie("accessToken",accessToken,options)
-    .cookie("refreshToken",refreshToken,options)
+    .cookie("accessToken",accessToken,aOptions)
+    .cookie("refreshToken",refreshToken,rOptions)
     .json(
         new ApiResponse(200, {
             user: loggedInUser,
@@ -171,7 +178,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     
     const options = {
         httpOnly: true,
-        secure: false
+        secure: true,
+        sameSite: "none"
     }
 
     return res
@@ -201,17 +209,25 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401,"refreshToken invalid or expired");
     }
 
-    const options = {
+    const rOptions = {
         httpOnly: true,
-        secure: true
+        secure: true,
+        sameSite: "none",
+        maxAge: process.env.REFRESH_TOKEN_EXPIRY
+    }
+    const aOptions = {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: process.env.ACCESS_TOKEN_EXPIRY
     }
 
     const {accessToken, refreshToken} = await generateRefreshAndAccessToken(decodedToken?._id);
 
     return res
     .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, aOptions)
+    .cookie("refreshToken", refreshToken, rOptions)
     .json(
         new ApiResponse(200,{accessToken, refreshToken}, "Tokens are refreshed")
     )
