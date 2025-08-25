@@ -113,7 +113,6 @@ const loginUser = asyncHandler(async (req, res) => {
     //get data from body 
     const {email, username, password} = await req.body;
     
-
     if(!username && !email){
         throw new ApiError(400,"email or username are required");
     }
@@ -139,24 +138,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken").lean();
 
-    //send cookie
-    const rOptions = {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(process.env.REFRESH_TOKEN_EXPIRY)
-    }
-    const aOptions = {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(process.env.ACCESS_TOKEN_EXPIRY)
-    }
-
     return res
     .status(200)
-    .cookie("accessToken",accessToken,aOptions)
-    .cookie("refreshToken",refreshToken,rOptions)
     .json(
         new ApiResponse(200, {
             user: loggedInUser,
@@ -192,7 +175,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    const incomingRefreshToken = req.cookies.refreshToken || req.header("authorization")?.replace("Bearer ","");
 
     if(!incomingRefreshToken){
         throw new ApiError(401,"Unothorized request");
@@ -210,25 +193,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401,"refreshToken invalid or expired");
     }
 
-    const rOptions = {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(process.env.REFRESH_TOKEN_EXPIRY)
-    }
-    const aOptions = {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: ms(process.env.ACCESS_TOKEN_EXPIRY)
-    }
-
     const {accessToken, refreshToken} = await generateRefreshAndAccessToken(decodedToken?._id);
 
     return res
     .status(200)
-    .cookie("accessToken", accessToken, aOptions)
-    .cookie("refreshToken", refreshToken, rOptions)
     .json(
         new ApiResponse(200,{accessToken, refreshToken, user}, "Tokens are refreshed")
     )

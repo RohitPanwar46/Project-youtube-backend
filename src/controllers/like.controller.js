@@ -11,9 +11,9 @@ import jwt from 'jsonwebtoken'
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
     let data;
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
-    
-    if(!incomingRefreshToken){
+    const incomingAccessToken = req.cookies.accessToken || req.header("authorization")?.replace("Bearer ","");
+
+    if(!incomingAccessToken){
         throw new ApiError(401,"Unothorized request");
     }
     
@@ -30,12 +30,12 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     
     // if not liked add a like
     if (!liked) {
-        
-        const decodedToken = jwt.verify(incomingRefreshToken,process.env.ACCESS_TOKEN_SECRET);
+
+        const decodedToken = jwt.verify(incomingAccessToken, process.env.ACCESS_TOKEN_SECRET);
 
         await Like.create({
             video: videoId,
-            likedBy:decodedToken._id
+            likedBy: decodedToken._id
         })
         data = "liked"
     }
