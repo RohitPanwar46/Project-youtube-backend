@@ -14,7 +14,7 @@ import {upload} from "../middlewares/multer.middleware.js"
 const router = Router();
 
 router.route("/").get(getAllVideos)
-router.route("/:videoId").get(getVideoById)
+router.route("/:videoId").get(getVideoById).post(addView);
 
 router.use(verifyJwt); // Apply verifyJWT middleware to all routes in this file
 
@@ -39,7 +39,6 @@ router
     .route("/:videoId")
     .delete(deleteVideo)
     .patch(upload.single("thumbnail"), updateVideo)
-    .post(addView);
 
 router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
 
