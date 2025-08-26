@@ -73,8 +73,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const decodedToken = jwt.verify(incomingRefreshToken,process.env.ACCESS_TOKEN_SECRET);
 
     const video = await Video.create({
-        videoFile: videoRef.url,
-        thumbnail: thumbnailRef.url,
+        videoFile: videoRef.secure_url,
+        thumbnail: thumbnailRef.secure_url,
         title,
         description,
         duration: videoRef.duration,
@@ -136,8 +136,8 @@ const updateVideo = asyncHandler(async (req, res) => {
 
     if (req.files?.thumbnail?.[0]?.path) {
         const thumbnailRef = await uploadOnCloudinary(req.files.thumbnail[0].path);
-        if (thumbnailRef && thumbnailRef.url) {
-            updateData.thumbnail = thumbnailRef.url;
+        if (thumbnailRef && thumbnailRef.secure_url) {
+            updateData.thumbnail = thumbnailRef.secure_url;
         }
     }
 
