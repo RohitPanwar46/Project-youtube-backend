@@ -43,7 +43,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
 
     return res
         .status(200)
-        .json(new ApiResponse(200, { subscribed }, subscribed ? "Subscribed" : "Unsubscribed"));
+        .json(new ApiResponse(200, { IsSubscribed: subscribed }, subscribed ? "Subscribed" : "Unsubscribed"));
 });
 
 // Controller to return subscriber list of a channel
@@ -55,12 +55,13 @@ const getChannelSubscribers = asyncHandler(async (req, res) => {
     }
 
     const subscribers = await Subscription.find({ channel: channelId })
-        .populate("subscriber", "username avatar")
         .lean();
+
+    const count = subscribers.length;
 
     return res
         .status(200)
-        .json(new ApiResponse(200, subscribers, "Subscribers fetched successfully"));
+        .json(new ApiResponse(200, {subscribers, count}, "Subscribers fetched successfully"));
 });
 
 // Controller to return channel list to which user has subscribed

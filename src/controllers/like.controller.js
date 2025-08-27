@@ -22,7 +22,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     // check the video is already liked or not 
 
     const liked = await Like.findOne({video:{_id: videoId}, likedBy: req.user?._id}).populate("likedBy","_id name email");
-    console.log("liked ===> ",liked);
+
     // if not liked add a like
     if (!liked) {
 
@@ -174,7 +174,6 @@ const getVideoLikesCount = asyncHandler(async (req, res) => {
             likedByUser = true;
         }
     }
-
 
     const likesCount = await Like.countDocuments({ video: { _id: videoId } });
 
