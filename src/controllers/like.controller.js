@@ -11,39 +11,32 @@ import jwt from 'jsonwebtoken'
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
     let data;
-    const incomingAccessToken = req.cookies.accessToken || req.header("authorization")?.replace("Bearer ","");
-
-    if(!incomingAccessToken){
-        throw new ApiError(401,"Unothorized request");
-    }
     
     // check the video exist or not
     const video = await Video.findOne({_id:videoId})
 
     if(!video){
-        throw new ApiError(401,"video does not exist")
+        throw new ApiError(402,"video does not exist or invalid video id")
     }
 
     // check the video is already liked or not 
 
-    const liked = await Like.findOne({video:{_id: videoId}});
-    
+    const liked = await Like.findOne({video:{_id: videoId}, likedBy: req.user?._id}).populate("likedBy","_id name email");
+    console.log("liked ===> ",liked);
     // if not liked add a like
     if (!liked) {
 
-        const decodedToken = jwt.verify(incomingAccessToken, process.env.ACCESS_TOKEN_SECRET);
-
         await Like.create({
             video: videoId,
-            likedBy: decodedToken._id
+            likedBy: req.user?._id
         })
         data = "liked"
     }
 
     // if liked then remove it from like
     if(liked){
-        await Like.deleteOne({video:{_id: videoId}})
-        data = "disliked"
+        await Like.deleteOne({video:{_id: videoId}, likedBy: req.user?._id})
+        data = "unliked"
     }
     
     return res
