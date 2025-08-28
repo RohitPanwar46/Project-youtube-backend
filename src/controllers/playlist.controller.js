@@ -22,7 +22,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
 })
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
-    const userId = req.params.userId || req.user?._id
+    const userId = req.user?._id;
 
     if (!isValidObjectId(userId)) {
         throw new ApiError(400, "Invalid user ID")
@@ -30,7 +30,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
 
     const playlists = await Playlist.find({owner: userId})
 
-    res.status(200).json(new ApiResponse(200, playlists, "User playlists fetched successfully"))
+    res.status(200).json(new ApiResponse(200, playlists ? playlists : [], "User playlists fetched successfully"))
 })
 
 const getPlaylistById = asyncHandler(async (req, res) => {
@@ -66,12 +66,10 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(403, "You are not authorized to add videos to this playlist")
     }
 
-    if (playlist.videos.includes(videoId)) {
-        throw new ApiError(409, "Video already in playlist")
+    if (!playlist.videos.includes(videoId)) {
+        playlist.videos.push(videoId)
+        await playlist.save()
     }
-
-    playlist.videos.push(videoId)
-    await playlist.save()
 
     res.status(200).json(new ApiResponse(200, playlist, "Video added to playlist"))
 })
