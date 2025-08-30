@@ -6,7 +6,6 @@ import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {Video} from "../models/video.model.js"
-import jwt from 'jsonwebtoken'
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
@@ -46,6 +45,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
     const { commentId } = req.params;
+    const userId = req.user?._id;
     let data;
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
@@ -61,10 +61,9 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
     }
 
     // check if the comment is already liked or not
-    const liked = await Like.findOne({ comment: { _id: commentId } });
+    const liked = await Like.findOne({ comment: { _id: commentId }, likedBy: userId });
 
     if (!liked) {
-        const userId = req.user?._id;
 
         await Like.create({
             comment: commentId,
