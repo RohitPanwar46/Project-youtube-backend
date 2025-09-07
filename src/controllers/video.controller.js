@@ -69,21 +69,18 @@ const publishAVideo = asyncHandler(async (req, res) => {
         throw new ApiError(500,"failed to uplaod video or thumbnail on cloudinary")
     }
 
-    const incomingRefreshToken = await req.cookies.refreshToken || req.body.refreshToken;
-    const decodedToken = jwt.verify(incomingRefreshToken,process.env.ACCESS_TOKEN_SECRET);
-
     const video = await Video.create({
         videoFile: videoRef.secure_url,
         thumbnail: thumbnailRef.secure_url,
         title,
         description,
         duration: videoRef.duration,
-        owner: decodedToken._id,
+        owner: req.user._id,
         publicId: videoRef.public_id
     })
     
     return res
-    .status(200)
+    .status(201)
     .json(new ApiResponse(200, video ,"video uploaded successfully"))
 
 })
