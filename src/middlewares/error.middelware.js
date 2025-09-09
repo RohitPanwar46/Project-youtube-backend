@@ -1,11 +1,6 @@
 import { ApiError } from "../utils/ApiError.js";
 
 export default function errorHandler(err, req, res, next) {
-  // Debug log
-  console.log("Sending error response:", {
-  statusCode: err.statusCode,
-  message: err.message
-});
   console.error("ERROR HANDLER:", err);
 
   if (res.headersSent) {

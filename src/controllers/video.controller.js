@@ -118,10 +118,7 @@ const updateVideo = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Video not found");
     }
 
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
-    const decodedToken = jwt.verify(incomingRefreshToken, process.env.ACCESS_TOKEN_SECRET);
-
-    if (video.owner.toString() !== decodedToken._id) {
+    if (video.owner.toString() !== req.user._id) {
         throw new ApiError(403, "You do not have permission to update this video");
     }
 
@@ -168,18 +165,12 @@ const deleteVideo = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Video not found or already deleted");
     }
 
-    const incomingRefreshToken = await req.cookies.refreshToken || req.body.refreshToken;
-    const decodedToken = jwt.verify(incomingRefreshToken,process.env.ACCESS_TOKEN_SECRET);
-
-    if(!(decodedToken._id !== videoId)){
+    if(!(req.user._id !== videoId)){
         throw new ApiError(401, "You don't have access to delete this video")
     }
 
     const deletedVideo = await Video.findByIdAndDelete(videoId);
     const deletedOnCloudnary = await cloudinary.uploader.destroy(video.publicId,{resource_type: "video"})
-
-    console.log("respone of deletededOnclo.. video ===> ",deletedOnCloudnary); // Todo check the response
-    console.log("respone of deletedVideo video ===> ",deletedVideo); // Todo check the response
     
     if (!deletedVideo ) {
         throw new ApiError(404, "Video not found or already deleted");
@@ -188,8 +179,6 @@ const deleteVideo = asyncHandler(async (req, res) => {
     if(deletedOnCloudnary.result !== "ok"){
         throw new ApiError(501, "video not deleted from cloudinary or video does not exist in cludinary")
     }
-
-    deleteVideo.deletedOnCloudnary = deletedOnCloudnary;
 
     return res
         .status(200)

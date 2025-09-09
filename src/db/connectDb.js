@@ -5,14 +5,12 @@ let isConnected = false;
 
 const connectDb = async ()=>{
     if (isConnected) {
-            console.log("Using existing MongoDB connection.");
             return;
         }
 
     try {
         if (mongoose.connection.readyState === 1) {
             // If there's already an open connection, use it
-            console.log("Reusing existing MongoDB connection.");
             isConnected = true;
             return;
         }
