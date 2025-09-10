@@ -76,7 +76,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
         description,
         duration: videoRef.duration,
         owner: req.user._id,
-        publicId: videoRef.public_id
+        videoPublicId: videoRef.public_id,
+        thumbnailPublicId: thumbnailRef.public_id
     })
     
     return res
@@ -117,8 +118,8 @@ const updateVideo = asyncHandler(async (req, res) => {
     if (!video) {
         throw new ApiError(404, "Video not found");
     }
-
-    if (video.owner.toString() !== req.user._id) {
+    
+    if (video.owner.toString() !== req.user._id.toString()) {
         throw new ApiError(403, "You do not have permission to update this video");
     }
 
@@ -128,10 +129,17 @@ const updateVideo = asyncHandler(async (req, res) => {
     if (title) updateData.title = title;
     if (description) updateData.description = description;
 
-    if (req.files?.thumbnail?.[0]?.path) {
-        const thumbnailRef = await uploadOnCloudinary(req.files.thumbnail[0].path);
-        if (thumbnailRef && thumbnailRef.secure_url) {
+    if (req.file) {
+        const thumbnailRef = await uploadOnCloudinary(req.file.path);
+        const deletedOldThumbnail = await cloudinary.uploader.destroy(video.thumbnailPublicId,{resource_type: "image"});
+
+        if (!deletedOldThumbnail) {
+            throw new ApiError(501, "Old thumbnail not deleted from cloudinary or thumbnail does not exist in cloudinary");
+        }
+        
+        if (thumbnailRef && thumbnailRef.secure_url && thumbnailRef.public_id) {
             updateData.thumbnail = thumbnailRef.secure_url;
+            updateData.thumbnailPublicId = thumbnailRef.public_id;
         }
     }
 
@@ -144,7 +152,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     if (!updatedVideo) {
         throw new ApiError(404, "Video not found or update failed");
     }
-
+     
     return res
         .status(200)
         .json(new ApiResponse(200, updatedVideo, "Video updated successfully"));
