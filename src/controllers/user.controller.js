@@ -3,7 +3,7 @@ import {ApiError} from "../utils/ApiError.js";
 import {User} from "../models/user.model.js";
 import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import jwt from "jsonwebtoken";
+import jwt, { decode } from "jsonwebtoken";
 import mongoose from "mongoose";
 import ms from "ms";
 
@@ -149,6 +149,7 @@ const loginUser = asyncHandler(async (req, res) => {
 })
 
 const logoutUser = asyncHandler(async (req, res) => {
+    console.log("logout user called");
     await User.findByIdAndUpdate(
         req.user._id,
         {
@@ -180,19 +181,25 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401,"Unothorized request");
     }
 
-    const decodedToken = jwt.verify(incomingRefreshToken,process.env.ACCESS_TOKEN_SECRET);
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-    const user = await User.findById(decodedToken?._id).select("-password");
+    if (!decodedToken?._id) {
+        throw new ApiError(401,"Invalid refreshToken");
+    }
+
+    const user = await User.findById(decodedToken._id).select("-password");
 
     if(!user){
         throw new ApiError(401,"Invalid refreshToken");
     }
-
+    
     if (incomingRefreshToken !== user?.refreshToken) {
+        console.log("user.refreshToken", user.refreshToken);
+        console.log("incomingRefreshToken", incomingRefreshToken);
         throw new ApiError(401,"refreshToken invalid or expired");
     }
 
-    const {accessToken, refreshToken} = await generateRefreshAndAccessToken(decodedToken?._id);
+    const {accessToken, refreshToken} = await generateRefreshAndAccessToken(decodedToken._id);
 
     return res
     .status(200)
