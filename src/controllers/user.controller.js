@@ -81,7 +81,7 @@ const generateRefreshAndAccessToken = async (userId) => {
             throw new ApiError(501, "user id did not passed")
         }
 
-        const user = await User.findById(userId)
+        const user = await User.findById(userId).select("-password")
 
         if (!user) {
             throw new ApiError(401, "user not found may be userId is incorrect or not found")
@@ -99,11 +99,12 @@ const generateRefreshAndAccessToken = async (userId) => {
         
 
         user.refreshToken = refreshToken;
-        
+
         await user.save({validateBeforeSave: false});
 
         return {accessToken, refreshToken};
     } catch (error) {
+        console.log("error while generating refresh and access token", error);
         throw new ApiError(500, "Something went wrong while generating refresh and access token")
     }
 }
@@ -193,7 +194,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401,"Invalid refreshToken");
     }
     
-    if (incomingRefreshToken !== user?.refreshToken) {
+    if (incomingRefreshToken !== user.refreshToken) {
         console.log("user.refreshToken", user.refreshToken);
         console.log("incomingRefreshToken", incomingRefreshToken);
         throw new ApiError(401,"refreshToken invalid or expired");
@@ -204,7 +205,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(200,{accessToken, refreshToken, user}, "Tokens are refreshed")
+        new ApiResponse(200,{accessToken, refreshToken}, "Tokens are refreshed")
     )
 })
 
