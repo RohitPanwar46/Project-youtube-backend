@@ -81,8 +81,21 @@ const getUserSubscribedChannels = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, channels, "Subscribed channels fetched successfully"));
 });
 
+const getAllChannels = asyncHandler(async (req, res) => {
+    const channels = await User.find({}, "username avatar").lean();
+
+    if(!channels){
+        throw new ApiError(404, "No channels found");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, channels, "All channels fetched successfully"));
+})
+
 export {
     toggleSubscription,
     getChannelSubscribers,
-    getUserSubscribedChannels
+    getUserSubscribedChannels,
+    getAllChannels
 }
